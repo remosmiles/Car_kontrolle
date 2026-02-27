@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carkontrolle Pro - Digitales Protokoll</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card { @apply bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200; }
+        .label { @apply block text-sm font-semibold text-gray-700 mb-1; }
+        .input { @apply w-full p-2 border rounded-md mb-3 focus:ring-2 focus:ring-blue-500 outline-none; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+
+    <div class="max-auto max-w-4xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-blue-800">Carkontrolle Pro</h1>
+            <p class="text-gray-600">Digitales Erfassungstool für Schwerverkehrskontrollen</p>
+        </header>
+
+        <section class="card">
+            <h2 class="text-xl font-bold mb-4 border-b pb-2">Neues Fahrzeug erfassen</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <div>
+                    <label class="label">Herkunft (Staat)</label>
+                    <select id="herkunft" class="input">
+                        <option value="CH">Schweiz (CH)</option>
+                        <option value="EU">EU-Staat</option>
+                        <option value="Dritte">Drittstaat</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="label">Anzahl Personen im Fahrzeug</label>
+                    <input type="number" id="personen" class="input" placeholder="z.B. 45" min="0">
+                </div>
+
+                <div>
+                    <label class="label">RIPOL Treffer?</label>
+                    <select id="ripol" class="input">
+                        <option value="Nein">Nein</option>
+                        <option value="Ja">Ja (Ausschreibung vorhanden)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="label">Technischer Mangel (Anzeige)</label>
+                    <select id="mangel" class="input">
+                        <option value="Nein">Kein Mangel</option>
+                        <option value="Ja">Anzeige erstattet</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="label">Fahrzeug stillgelegt?</label>
+                    <select id="stilllegung" class="input">
+                        <option value="Nein">Nein</option>
+                        <option value="Ja">Ja (Fahrzeug gesperrt)</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="label">Bemerkung / Grund für Stilllegung</label>
+                    <input type="text" id="grund" class="input" placeholder="z.B. Bremse defekt, fehlende Lizenz">
+                </div>
+            </div>
+            
+            <button onclick="addCar()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition">
+                Fahrzeug speichern
+            </button>
+        </section>
+
+        <section class="card bg-blue-50">
+            <h2 class="text-xl font-bold mb-4 text-blue-900">Zusammenfassung (Total)</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="p-3 bg-white rounded shadow-sm">
+                    <span class="block text-gray-500 text-xs uppercase">Fahrzeuge</span>
+                    <span id="stat-total" class="text-2xl font-bold">0</span>
+                </div>
+                <div class="p-3 bg-white rounded shadow-sm">
+                    <span class="block text-gray-500 text-xs uppercase">Personen</span>
+                    <span id="stat-personen" class="text-2xl font-bold text-blue-600">0</span>
+                </div>
+                <div class="p-3 bg-white rounded shadow-sm">
+                    <span class="block text-gray-500 text-xs uppercase">RIPOL</span>
+                    <span id="stat-ripol" class="text-2xl font-bold text-red-600">0</span>
+                </div>
+                <div class="p-3 bg-white rounded shadow-sm">
+                    <span class="block text-gray-500 text-xs uppercase">Stillgelegt</span>
+                    <span id="stat-still" class="text-2xl font-bold text-orange-600">0</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Kontroll-Logbuch</h2>
+                <button onclick="exportCSV()" class="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Excel Export</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="p-2 border">Staat</th>
+                            <th class="p-2 border">Pax</th>
+                            <th class="p-2 border">RIPOL</th>
+                            <th class="p-2 border">Mangel</th>
+                            <th class="p-2 border">Still.</th>
+                            <th class="p-2 border">Aktion</th>
+                        </tr>
+                    </thead>
+                    <tbody id="car-list">
+                        </tbody>
+                </table>
+            </div>
+            <button onclick="clearData()" class="mt-4 text-red-500 text-sm hover:underline">Alle Daten löschen</button>
+        </section>
+    </div>
+
+    <script>
+        let cars = JSON.parse(localStorage.getItem('carkontrolle_data')) || [];
+
+        function addCar() {
+            const car = {
+                herkunft: document.getElementById('herkunft').value,
+                personen: parseInt(document.getElementById('personen').value) || 0,
+                ripol: document.getElementById('ripol').value,
+                mangel: document.getElementById('mangel').value,
+                stilllegung: document.getElementById('stilllegung').value,
+                grund: document.getElementById('grund').value,
+                id: Date.now()
+            };
+
+            cars.push(car);
+            saveAndRender();
+            
+            // Reset Form
+            document.getElementById('personen').value = '';
+            document.getElementById('grund').value = '';
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('carkontrolle_data', JSON.stringify(cars));
+            renderList();
+            updateStats();
+        }
+
+        function renderList() {
+            const list = document.getElementById('car-list');
+            list.innerHTML = '';
+            cars.forEach(car => {
+                list.innerHTML += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-2 border">${car.herkunft}</td>
+                        <td class="p-2 border">${car.personen}</td>
+                        <td class="p-2 border ${car.ripol === 'Ja' ? 'text-red-600 font-bold' : ''}">${car.ripol}</td>
+                        <td class="p-2 border">${car.mangel}</td>
+                        <td class="p-2 border ${car.stilllegung === 'Ja' ? 'bg-orange-100 text-orange-800' : ''}">${car.stilllegung}</td>
+                        <td class="p-2 border">
+                            <button onclick="deleteCar(${car.id})" class="text-red-500">X</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('stat-total').innerText = cars.length;
+            document.getElementById('stat-personen').innerText = cars.reduce((sum, c) => sum + c.personen, 0);
+            document.getElementById('stat-ripol').innerText = cars.filter(c => c.ripol === 'Ja').length;
+            document.getElementById('stat-still').innerText = cars.filter(c => c.stilllegung === 'Ja').length;
+        }
+
+        function deleteCar(id) {
+            cars = cars.filter(c => c.id !== id);
+            saveAndRender();
+        }
+
+        function clearData() {
+            if(confirm("Wirklich alle Daten löschen?")) {
+                cars = [];
+                saveAndRender();
+            }
+        }
+
+        function exportCSV() {
+            let csv = "Herkunft;Personen;RIPOL;Mangel;Stilllegung;Grund\n";
+            cars.forEach(c => {
+                csv += `${c.herkunft};${c.personen};${c.ripol};${c.mangel};${c.stilllegung};${c.grund}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'Carkontrolle_Export.csv');
+            a.click();
+        }
+
+        // Initiales Laden
+        renderList();
+        updateStats();
+    </script>
+</body>
+</html>
