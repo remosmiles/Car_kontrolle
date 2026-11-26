@@ -1,206 +1,2292 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de-CH">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carkontrolle Pro - Digitales Protokoll</title>
+    <title>Carkontrolle Pro – Digitales Kontrollprotokoll (SVG / VTS / ARV 1)</title>
+    <!-- Inter Font für maximale Lesbarkeit auf Mobilgeräten und im Druck -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <!-- Ausschliesslich Druck-Styles (@media print) und sanftes Scrollen -->
     <style>
-        .card { @apply bg-white p-6 rounded-lg shadow-md mb-6 border border-gray-200; }
-        .label { @apply block text-sm font-semibold text-gray-700 mb-1; }
-        .input { @apply w-full p-2 border rounded-md mb-3 focus:ring-2 focus:ring-blue-500 outline-none; }
+        html {
+            scroll-behavior: smooth;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #0f172a !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            #app-shell,
+            #toast-container,
+            #confirm-modal,
+            #delete-all-modal,
+            .no-print {
+                display: none !important;
+            }
+            #report-modal {
+                position: static !important;
+                inset: auto !important;
+                display: block !important;
+                background: transparent !important;
+                padding: 0 !important;
+                overflow: visible !important;
+            }
+            #report-modal-dialog {
+                position: static !important;
+                max-width: 100% !important;
+                max-height: none !important;
+                height: auto !important;
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                overflow: visible !important;
+            }
+            #report-printable {
+                overflow: visible !important;
+                max-height: none !important;
+                padding: 0 !important;
+            }
+            .print-break-inside-avoid {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen p-4">
+<body class="bg-slate-100 text-slate-900 min-h-screen antialiased selection:bg-blue-200 selection:text-blue-900">
 
-    <div class="max-auto max-w-4xl">
-        <header class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-blue-800">Carkontrolle Pro</h1>
-            <p class="text-gray-600">Digitales Erfassungstool für Schwerverkehrskontrollen</p>
+    <!-- Haupt-Container der Web-App (wird beim Drucken des Abschlussberichts ausgeblendet) -->
+    <div id="app-shell" class="min-h-screen flex flex-col">
+
+        <!-- Einsatz-Header (Navy / Slate mit Schweizer Kontrast-Akzent) -->
+        <header class="bg-slate-900 text-white border-b-4 border-blue-600 shadow-lg sticky top-0 z-30">
+            <div class="max-w-6xl mx-auto px-4 py-3.5 sm:px-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <!-- Logo & Titel -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center shadow-inner shrink-0 border border-blue-400/40">
+                            <!-- Bus / Kontroll-Icon SVG -->
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 6v6m8-6v6M4 11h16M5 17h14a2 2 0 002-2V7a3 3 0 00-3-3H6a3 3 0 00-3 3v8a2 2 0 002 2zm2 0v2m10-2v2M7 14h.01M17 14h.01" />
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h1 class="text-lg sm:text-xl font-extrabold tracking-tight leading-none">Carkontrolle Pro</h1>
+                                <span class="px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-200 border border-blue-400/30 rounded-md">SVG / VTS / ARV 1</span>
+                            </div>
+                            <p class="text-xs sm:text-sm text-slate-300 mt-0.5">Digitales Kontrollprotokoll für Reisecar- &amp; Schwerverkehrskontrollen</p>
+                        </div>
+                    </div>
+
+                    <!-- Kontrollort + Schnellaktionen -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex items-center bg-slate-800 border border-slate-700 rounded-xl px-2.5 py-1.5 flex-1 sm:flex-initial min-w-[190px]">
+                            <svg class="w-4 h-4 text-slate-400 mr-1.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <input
+                                type="text"
+                                id="kontrollort-input"
+                                placeholder="Kontrollort (z.B. SVKZ)"
+                                aria-label="Kontrollort"
+                                class="bg-transparent text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none w-full"
+                            >
+                        </div>
+
+                        <button
+                            type="button"
+                            onclick="openReportModal()"
+                            class="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-semibold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl shadow transition min-h-[42px]"
+                        >
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Abschlussbericht</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onclick="exportCSV()"
+                            class="inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-semibold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl shadow transition min-h-[42px]"
+                            title="Als Excel-CSV herunterladen"
+                        >
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span class="hidden sm:inline">Excel CSV</span>
+                            <span class="sm:hidden">CSV</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </header>
 
-        <section class="card">
-            <h2 class="text-xl font-bold mb-4 border-b pb-2">Neues Fahrzeug erfassen</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                <div>
-                    <label class="label">Herkunft (Staat)</label>
-                    <select id="herkunft" class="input">
-                        <option value="CH">Schweiz (CH)</option>
-                        <option value="EU">EU-Staat</option>
-                        <option value="Dritte">Drittstaat</option>
-                    </select>
+        <!-- Hauptinhalt (sauber zentriert mit mx-auto) -->
+        <main class="max-w-6xl w-full mx-auto px-4 py-6 sm:px-6 space-y-6 flex-1">
+
+            <!-- ===================================================================== -->
+            <!-- 2. LIVE-STATISTIK-DASHBOARD (ZUSAMMENFASSUNG TOTAL)                   -->
+            <!-- ===================================================================== -->
+            <section aria-label="Live-Statistik-Dashboard">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                        Live-Übersicht der Kontrolle
+                    </h2>
+                    <span id="live-date-label" class="text-xs font-medium text-slate-500"></span>
                 </div>
 
-                <div>
-                    <label class="label">Anzahl Personen im Fahrzeug</label>
-                    <input type="number" id="personen" class="input" placeholder="z.B. 45" min="0">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <!-- Kachel 1: Kontrollierte Cars + CH/EU/Drittstaat -->
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Kontrollierte Cars</span>
+                            <div class="text-3xl font-extrabold text-slate-900 mt-1" id="stat-total-cars">0</div>
+                        </div>
+                        <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-slate-600 gap-1">
+                            <span title="Schweiz">🇨🇭 <strong id="stat-ch" class="text-slate-900">0</strong></span>
+                            <span class="text-slate-300">|</span>
+                            <span title="EU-Staat">🇪🇺 <strong id="stat-eu" class="text-slate-900">0</strong></span>
+                            <span class="text-slate-300">|</span>
+                            <span title="Drittstaat">🌍 <strong id="stat-dritte" class="text-slate-900">0</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Kachel 2: Kontrollierte Personen -->
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Personen (Pax)</span>
+                            <div class="text-3xl font-extrabold text-blue-700 mt-1" id="stat-total-pax">0</div>
+                        </div>
+                        <div class="mt-2.5 pt-2 border-t border-slate-100 text-[11px] font-medium text-slate-500">
+                            Ø <span id="stat-avg-pax" class="font-bold text-slate-700">0</span> Pers. / Car
+                        </div>
+                    </div>
+
+                    <!-- Kachel 3: Anzeigen Total (SVG + Technik + betroffene Cars) -->
+                    <div class="bg-white rounded-2xl p-4 border-2 border-red-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-red-700 block">Anzeigen Total</span>
+                            <div class="text-3xl font-extrabold text-red-600 mt-1" id="stat-anzeigen-total">0</div>
+                        </div>
+                        <div class="mt-2.5 pt-2 border-t border-red-100 text-[11px] font-semibold text-slate-600 space-y-0.5">
+                            <div class="flex justify-between">
+                                <span>SVG: <strong id="stat-anzeigen-svg" class="text-red-700">0</strong></span>
+                                <span>Tech.: <strong id="stat-anzeigen-tech" class="text-red-700">0</strong></span>
+                            </div>
+                            <div class="text-[10px] text-slate-500">Betr. Cars: <strong id="stat-anzeigen-cars" class="text-slate-700">0</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- Kachel 4: Widerhandlungen gesamt (SVG vs. Technik inkl. OBV/Mängel) -->
+                    <div class="bg-white rounded-2xl p-4 border border-amber-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-700 block">Widerhandlungen</span>
+                            <div class="text-3xl font-extrabold text-amber-600 mt-1" id="stat-widerhandlungen-total">0</div>
+                        </div>
+                        <div class="mt-2.5 pt-2 border-t border-amber-100 text-[11px] font-semibold text-slate-600 space-y-0.5">
+                            <div class="flex justify-between">
+                                <span>SVG: <strong id="stat-svg-all" class="text-slate-900">0</strong></span>
+                                <span>VTS: <strong id="stat-tech-all" class="text-slate-900">0</strong></span>
+                            </div>
+                            <div class="text-[10px] text-slate-500">inkl. OBV &amp; Mängel</div>
+                        </div>
+                    </div>
+
+                    <!-- Kachel 5: RIPOL & Stilllegungen -->
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">RIPOL / Stillleg.</span>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <span class="text-2xl font-extrabold text-rose-600" id="stat-ripol" title="RIPOL-Treffer">0</span>
+                                <span class="text-slate-300 font-light text-xl">/</span>
+                                <span class="text-2xl font-extrabold text-orange-600" id="stat-stilllegung" title="Stilllegungen">0</span>
+                            </div>
+                        </div>
+                        <div class="mt-2.5 pt-2 border-t border-slate-100 flex justify-between text-[11px] font-semibold">
+                            <span class="text-rose-700">RIPOL</span>
+                            <span class="text-orange-700">Stillgelegt</span>
+                        </div>
+                    </div>
+
+                    <!-- Kachel 6: Beanstandungsquote -->
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Beanstandung</span>
+                            <div class="text-3xl font-extrabold text-slate-900 mt-1"><span id="stat-quote">0</span><span class="text-lg font-bold text-slate-500">%</span></div>
+                        </div>
+                        <div class="mt-2.5 pt-2 border-t border-slate-100">
+                            <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                                <div id="stat-quote-bar" class="bg-amber-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <div class="text-[10px] text-slate-500 mt-1 flex justify-between">
+                                <span>i.O.: <strong id="stat-ok-cars" class="text-emerald-700">0</strong></span>
+                                <span>Mangel: <strong id="stat-issue-cars" class="text-slate-700">0</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===================================================================== -->
+            <!-- 1. EINGABEFORMULAR ("NEUEN CAR ERFASSEN / BEARBEITEN")                -->
+            <!-- ===================================================================== -->
+            <section id="form-section" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <!-- Formular-Kopfzeile (ändert Farbe im Bearbeitungsmodus) -->
+                <div id="form-header-bar" class="bg-slate-800 text-white px-5 py-3.5 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <span id="form-mode-dot" class="w-3 h-3 rounded-full bg-blue-400 shrink-0"></span>
+                        <h2 id="form-title" class="text-base sm:text-lg font-bold">Neuen Car erfassen</h2>
+                    </div>
+                    <span id="edit-badge" class="hidden text-xs font-bold bg-amber-400 text-slate-950 px-2.5 py-1 rounded-lg uppercase tracking-wide">Bearbeitungsmodus</span>
                 </div>
 
-                <div>
-                    <label class="label">RIPOL Treffer?</label>
-                    <select id="ripol" class="input">
-                        <option value="Nein">Nein</option>
-                        <option value="Ja">Ja (Ausschreibung vorhanden)</option>
-                    </select>
+                <form id="car-form" onsubmit="handleFormSubmit(event)" class="p-5 sm:p-6 space-y-6" novalidate>
+                    <!-- Inline Validierungsmeldung (kein alert!) -->
+                    <div id="form-error" class="hidden bg-red-50 border border-red-300 text-red-800 px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2">
+                        <svg class="w-5 h-5 text-red-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span id="form-error-text">Bitte füllen Sie die Pflichtfelder aus.</span>
+                    </div>
+
+                    <!-- Block A: Fahrzeug-Identifikation & Herkunft -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <!-- Kontrollnummer (Pflichtfeld + "+1"-Auto-Vorschlag) -->
+                        <div class="md:col-span-4">
+                            <label for="kontrollnummer" class="block text-sm font-bold text-slate-700 mb-1.5">
+                                Kontrollnummer <span class="text-red-600">*</span>
+                            </label>
+                            <div class="flex gap-2">
+                                <input
+                                    type="text"
+                                    id="kontrollnummer"
+                                    required
+                                    autocomplete="off"
+                                    placeholder="z.B. K-001"
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white transition"
+                                >
+                                <button
+                                    type="button"
+                                    onclick="applyAutoIncrement()"
+                                    title="Nächste Nummer automatisch vorschlagen (+1)"
+                                    class="px-3.5 py-2.5 bg-slate-200 hover:bg-slate-300 active:bg-slate-400 text-slate-800 font-bold text-sm rounded-xl transition shrink-0 min-h-[44px]"
+                                >
+                                    +1
+                                </button>
+                            </div>
+                            <p id="duplicate-hint" class="hidden text-xs text-amber-700 font-medium mt-1">Hinweis: Diese Kontrollnummer wurde bereits verwendet.</p>
+                        </div>
+
+                        <!-- Kontrollschild / Unternehmen (optional) -->
+                        <div class="md:col-span-5">
+                            <label for="schild" class="block text-sm font-bold text-slate-700 mb-1.5">
+                                Kontrollschild / Unternehmen <span class="text-slate-400 font-normal">(optional)</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="schild"
+                                autocomplete="off"
+                                placeholder="z.B. ZH 123456 / Muster Reisen"
+                                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white transition"
+                            >
+                        </div>
+
+                        <!-- Anzahl Personen im Car -->
+                        <div class="md:col-span-3">
+                            <label for="personen" class="block text-sm font-bold text-slate-700 mb-1.5">
+                                Personen im Car <span class="text-slate-400 font-normal">(inkl. Chauff.)</span>
+                            </label>
+                            <input
+                                type="number"
+                                id="personen"
+                                min="0"
+                                max="150"
+                                inputmode="numeric"
+                                placeholder="z.B. 45"
+                                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 font-bold text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white transition"
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Herkunft (Staat): Drei grosse klickbare Auswahl-Buttons -->
+                    <div>
+                        <span class="block text-sm font-bold text-slate-700 mb-2">Herkunft (Zulassungsstaat)</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5" role="radiogroup" aria-label="Herkunft Staat">
+                            <button
+                                type="button"
+                                data-herkunft="CH"
+                                onclick="selectHerkunft('CH')"
+                                class="herkunft-btn flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-bold text-sm sm:text-base transition min-h-[48px]"
+                            >
+                                <span class="text-lg">🇨🇭</span>
+                                <span>Schweiz (CH)</span>
+                            </button>
+                            <button
+                                type="button"
+                                data-herkunft="EU"
+                                onclick="selectHerkunft('EU')"
+                                class="herkunft-btn flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-bold text-sm sm:text-base transition min-h-[48px]"
+                            >
+                                <span class="text-lg">🇪🇺</span>
+                                <span>EU-Staat</span>
+                            </button>
+                            <button
+                                type="button"
+                                data-herkunft="Dritte"
+                                onclick="selectHerkunft('Dritte')"
+                                class="herkunft-btn flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-bold text-sm sm:text-base transition min-h-[48px]"
+                            >
+                                <span class="text-lg">🌍</span>
+                                <span>Drittstaat</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-200">
+
+                    <!-- Block B: SVG-Widerhandlungen & Technische Widerhandlungen (VTS) -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                        <!-- SVG-Widerhandlungen (SVG / ARV 1 / PBG) -->
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-extrabold text-slate-800 uppercase tracking-wide">SVG-Widerhandlungen</span>
+                                <span class="text-[11px] font-semibold text-slate-500">SVG / ARV 1 / PBG</span>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2">
+                                <button
+                                    type="button"
+                                    data-svg="keine"
+                                    onclick="selectSvgStatus('keine')"
+                                    class="svg-status-btn px-2 py-2.5 rounded-xl border-2 text-xs sm:text-sm font-bold transition min-h-[46px] text-center"
+                                >
+                                    Keine (i.O.)
+                                </button>
+                                <button
+                                    type="button"
+                                    data-svg="obv"
+                                    onclick="selectSvgStatus('obv')"
+                                    class="svg-status-btn px-2 py-2.5 rounded-xl border-2 text-xs sm:text-sm font-bold transition min-h-[46px] text-center"
+                                >
+                                    OBV / Verwarn.
+                                </button>
+                                <button
+                                    type="button"
+                                    data-svg="anzeige"
+                                    onclick="selectSvgStatus('anzeige')"
+                                    class="svg-status-btn px-2 py-2.5 rounded-xl border-2 text-xs sm:text-sm font-bold transition min-h-[46px] text-center"
+                                >
+                                    Anzeige (SVG)
+                                </button>
+                            </div>
+
+                            <!-- Schnellauswahl-Chips für SVG-Verstösse -->
+                            <div id="svg-chips-container" class="hidden pt-2 border-t border-slate-200">
+                                <span class="block text-xs font-bold text-slate-600 mb-2">Festgestellte SVG-Verstösse antippen (Mehrfachauswahl):</span>
+                                <div id="svg-chips-list" class="flex flex-wrap gap-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- Technische Widerhandlungen (VTS) -->
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-extrabold text-slate-800 uppercase tracking-wide">Technische Widerhandlungen</span>
+                                <span class="text-[11px] font-semibold text-slate-500">VTS / Betriebssicherheit</span>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2">
+                                <button
+                                    type="button"
+                                    data-tech="keine"
+                                    onclick="selectTechStatus('keine')"
+                                    class="tech-status-btn px-2 py-2.5 rounded-xl border-2 text-xs sm:text-sm font-bold transition min-h-[46px] text-center"
+                                >
+                                    Keine (i.O.)
+                                </button>
+                                <button
+                                    type="button"
+                                    data-tech="mangel"
+                                    onclick="selectTechStatus('mangel')"
+                                    class="tech-status-btn px-2 py-2.5 rounded-xl border-2 text-xs sm:text-sm font-bold transition min-h-[46px] text-center"
+                                >
+                                    Mängelbericht
+                                </button>
+                                <button
+                                    type="button"
+                                    data-tech="anzeige"
+                                    onclick="selectTechStatus('anzeige')"
+                                    class="tech-status-btn px-2 py-2.5 rounded-xl border-2 text-xs sm:text-sm font-bold transition min-h-[46px] text-center"
+                                >
+                                    Anzeige (Tech.)
+                                </button>
+                            </div>
+
+                            <!-- Schnellauswahl-Chips für Technische Mängel -->
+                            <div id="tech-chips-container" class="hidden pt-2 border-t border-slate-200">
+                                <span class="block text-xs font-bold text-slate-600 mb-2">Festgestellte technische Mängel antippen (Mehrfachauswahl):</span>
+                                <div id="tech-chips-list" class="flex flex-wrap gap-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Block C: RIPOL-Treffer & Stilllegung -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- RIPOL-Treffer -->
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                            <span class="block text-sm font-bold text-slate-800 mb-2">RIPOL-Treffer (Fahndung)?</span>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    data-ripol="false"
+                                    onclick="selectRipol(false)"
+                                    class="ripol-btn px-3 py-2.5 rounded-xl border-2 text-sm font-bold transition min-h-[46px]"
+                                >
+                                    Nein
+                                </button>
+                                <button
+                                    type="button"
+                                    data-ripol="true"
+                                    onclick="selectRipol(true)"
+                                    class="ripol-btn px-3 py-2.5 rounded-xl border-2 text-sm font-bold transition min-h-[46px]"
+                                >
+                                    Ja (Ausschreibung)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Fahrzeug stillgelegt -->
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                            <span class="block text-sm font-bold text-slate-800 mb-2">Fahrzeug stillgelegt (Weiterfahrtsverbot)?</span>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    data-still="false"
+                                    onclick="selectStilllegung(false)"
+                                    class="still-btn px-3 py-2.5 rounded-xl border-2 text-sm font-bold transition min-h-[46px]"
+                                >
+                                    Nein
+                                </button>
+                                <button
+                                    type="button"
+                                    data-still="true"
+                                    onclick="selectStilllegung(true)"
+                                    class="still-btn px-3 py-2.5 rounded-xl border-2 text-sm font-bold transition min-h-[46px]"
+                                >
+                                    Ja (Stillgelegt)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Block D: Bemerkung / Was war nicht gut? -->
+                    <div>
+                        <label for="bemerkung" class="block text-sm font-bold text-slate-700 mb-1.5">
+                            Bemerkung / Was war nicht gut? <span class="text-slate-400 font-normal">(Details, Grund für Stilllegung, Massnahmen)</span>
+                        </label>
+                        <textarea
+                            id="bemerkung"
+                            rows="2"
+                            placeholder="z.B. Bremsscheibe Achse 2 gerissen, Ruhezeit um 2.5h unterschritten, Weiterfahrt bis Reparatur untersagt..."
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-slate-900 text-sm sm:text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-slate-50 focus:bg-white transition resize-y"
+                        ></textarea>
+                    </div>
+
+                    <!-- Aktions-Buttons (Speichern / Abbrechen) -->
+                    <div class="flex flex-col sm:flex-row gap-3 pt-1">
+                        <button
+                            type="submit"
+                            id="submit-btn"
+                            class="flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-base py-3.5 px-6 rounded-xl shadow-md transition min-h-[52px]"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span id="submit-btn-text">Car erfassen</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            id="cancel-edit-btn"
+                            onclick="cancelEdit()"
+                            class="hidden sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-base py-3.5 px-6 rounded-xl transition min-h-[52px]"
+                        >
+                            Abbrechen
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- ===================================================================== -->
+            <!-- 3. KONTROLL-LOGBUCH ("KONTROLLIERTE CARS")                            -->
+            <!-- ===================================================================== -->
+            <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6 space-y-5">
+                <!-- Kopfbereich Logbuch + Ansichtsumschalter -->
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-slate-200 pb-4">
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                            <span>Kontroll-Logbuch</span>
+                            <span id="log-count-badge" class="text-xs font-bold bg-slate-200 text-slate-700 px-2.5 py-0.5 rounded-full">0</span>
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Klare Übersicht aller kontrollierten Cars und festgestellten Mängel</p>
+                    </div>
+
+                    <!-- Ansicht umschalten: Karten vs. Tabelle -->
+                    <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start md:self-auto">
+                        <button
+                            type="button"
+                            id="view-cards-btn"
+                            onclick="setViewMode('cards')"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition min-h-[38px]"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                            </svg>
+                            <span>Karten</span>
+                        </button>
+                        <button
+                            type="button"
+                            id="view-table-btn"
+                            onclick="setViewMode('table')"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition min-h-[38px]"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            <span>Tabelle</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="label">Technischer Mangel (Anzeige)</label>
-                    <select id="mangel" class="input">
-                        <option value="Nein">Kein Mangel</option>
-                        <option value="Ja">Anzeige erstattet</option>
-                    </select>
+                <!-- Suchfeld & Filter-Buttons -->
+                <div class="space-y-3">
+                    <div class="relative">
+                        <svg class="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                            type="text"
+                            id="search-input"
+                            oninput="handleSearchChange(this.value)"
+                            placeholder="Suchen nach Kontrollnummer, Schild, Unternehmen, Mangel oder Bemerkung..."
+                            class="w-full pl-11 pr-10 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        >
+                        <button
+                            type="button"
+                            id="clear-search-btn"
+                            onclick="clearSearch()"
+                            class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
+                            aria-label="Suche leeren"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Filter-Chips -->
+                    <div class="flex flex-wrap gap-2" id="filter-buttons">
+                        <button type="button" data-filter="all" onclick="setFilter('all')" class="filter-btn px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border transition min-h-[36px]">Alle</button>
+                        <button type="button" data-filter="issues" onclick="setFilter('issues')" class="filter-btn px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border transition min-h-[36px]">Nur Beanstandungen</button>
+                        <button type="button" data-filter="anzeigen" onclick="setFilter('anzeigen')" class="filter-btn px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border transition min-h-[36px]">Nur Anzeigen</button>
+                        <button type="button" data-filter="stillgelegt" onclick="setFilter('stillgelegt')" class="filter-btn px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border transition min-h-[36px]">Stillgelegt</button>
+                        <button type="button" data-filter="CH" onclick="setFilter('CH')" class="filter-btn px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border transition min-h-[36px]">🇨🇭 CH</button>
+                        <button type="button" data-filter="EU" onclick="setFilter('EU')" class="filter-btn px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border transition min-h-[36px]">🇪🇺 EU</button>
+                        <button type="button" data-filter="Dritte" onclick="setFilter('Dritte')" class="filter-btn px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border transition min-h-[36px]">🌍 Drittstaat</button>
+                    </div>
                 </div>
 
-                <div class="md:col-span-2">
-                    <label class="label">Fahrzeug stillgelegt?</label>
-                    <select id="stilllegung" class="input">
-                        <option value="Nein">Nein</option>
-                        <option value="Ja">Ja (Fahrzeug gesperrt)</option>
-                    </select>
-                </div>
+                <!-- Container für Karten- oder Tabellen-Ansicht -->
+                <div id="logbook-container"></div>
 
-                <div class="md:col-span-2">
-                    <label class="label">Bemerkung / Grund für Stilllegung</label>
-                    <input type="text" id="grund" class="input" placeholder="z.B. Bremse defekt, fehlende Lizenz">
-                </div>
-            </div>
-            
-            <button onclick="addCar()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition">
-                Fahrzeug speichern
-            </button>
-        </section>
+                <!-- Fusszeile des Logbuchs: Abschlussbericht & Neue Kontrolle starten -->
+                <div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <button
+                        type="button"
+                        onclick="openReportModal()"
+                        class="inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm px-5 py-3 rounded-xl shadow transition min-h-[46px]"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Kontroll-Abschlussbericht öffnen</span>
+                    </button>
 
-        <section class="card bg-blue-50">
-            <h2 class="text-xl font-bold mb-4 text-blue-900">Zusammenfassung (Total)</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div class="p-3 bg-white rounded shadow-sm">
-                    <span class="block text-gray-500 text-xs uppercase">Fahrzeuge</span>
-                    <span id="stat-total" class="text-2xl font-bold">0</span>
+                    <button
+                        type="button"
+                        onclick="openDeleteAllModal()"
+                        class="inline-flex items-center justify-center gap-2 text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 font-bold text-sm px-4 py-3 rounded-xl transition min-h-[46px]"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span>Neue Kontrolle starten (Alle Daten löschen)</span>
+                    </button>
                 </div>
-                <div class="p-3 bg-white rounded shadow-sm">
-                    <span class="block text-gray-500 text-xs uppercase">Personen</span>
-                    <span id="stat-personen" class="text-2xl font-bold text-blue-600">0</span>
-                </div>
-                <div class="p-3 bg-white rounded shadow-sm">
-                    <span class="block text-gray-500 text-xs uppercase">RIPOL</span>
-                    <span id="stat-ripol" class="text-2xl font-bold text-red-600">0</span>
-                </div>
-                <div class="p-3 bg-white rounded shadow-sm">
-                    <span class="block text-gray-500 text-xs uppercase">Stillgelegt</span>
-                    <span id="stat-still" class="text-2xl font-bold text-orange-600">0</span>
-                </div>
-            </div>
-        </section>
+            </section>
+        </main>
 
-        <section class="card">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Kontroll-Logbuch</h2>
-                <button onclick="exportCSV()" class="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Excel Export</button>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-200">
-                            <th class="p-2 border">Staat</th>
-                            <th class="p-2 border">Pax</th>
-                            <th class="p-2 border">RIPOL</th>
-                            <th class="p-2 border">Mangel</th>
-                            <th class="p-2 border">Still.</th>
-                            <th class="p-2 border">Aktion</th>
-                        </tr>
-                    </thead>
-                    <tbody id="car-list">
-                        </tbody>
-                </table>
-            </div>
-            <button onclick="clearData()" class="mt-4 text-red-500 text-sm hover:underline">Alle Daten löschen</button>
-        </section>
+        <!-- Dezenter Footer -->
+        <footer class="max-w-6xl w-full mx-auto px-4 py-4 text-center text-xs text-slate-400">
+            Carkontrolle Pro – Lokale Speicherung im Browser (Offline-fähig auf dem Kontrollplatz)
+        </footer>
     </div>
 
-    <script>
-        let cars = JSON.parse(localStorage.getItem('carkontrolle_data')) || [];
+    <!-- ===================================================================== -->
+    <!-- 4. MODAL: KONTROLL-ABSCHLUSSBERICHT (DRUCK- & EXPORTFÄHIG)            -->
+    <!-- ===================================================================== -->
+    <div
+        id="report-modal"
+        class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="report-modal-title"
+    >
+        <div
+            id="report-modal-dialog"
+            class="bg-white w-full max-w-4xl max-h-[92vh] rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden"
+        >
+            <!-- Modal Header (wird nicht gedruckt) -->
+            <div class="no-print bg-slate-900 text-white px-5 py-4 flex items-center justify-between gap-3 shrink-0">
+                <div>
+                    <h2 id="report-modal-title" class="text-lg font-extrabold">Kontroll-Abschlussbericht</h2>
+                    <p class="text-xs text-slate-300">Endauswertung für Einsatzjournal, Rapporte &amp; PDF-Druck</p>
+                </div>
+                <button
+                    type="button"
+                    onclick="closeReportModal()"
+                    class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition"
+                    aria-label="Schliessen"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
 
-        function addCar() {
-            const car = {
-                herkunft: document.getElementById('herkunft').value,
-                personen: parseInt(document.getElementById('personen').value) || 0,
-                ripol: document.getElementById('ripol').value,
-                mangel: document.getElementById('mangel').value,
-                stilllegung: document.getElementById('stilllegung').value,
-                grund: document.getElementById('grund').value,
-                id: Date.now()
+            <!-- Druckbarer Berichtsinhalt -->
+            <div id="report-printable" class="p-5 sm:p-7 overflow-y-auto space-y-6 flex-1 bg-white">
+                <!-- Dynamisch durch JS befüllt -->
+            </div>
+
+            <!-- Modal Footer mit Aktionsbuttons (wird nicht gedruckt) -->
+            <div class="no-print bg-slate-50 border-t border-slate-200 px-5 py-3.5 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+                <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                    <button
+                        type="button"
+                        onclick="copyShortReport()"
+                        class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-sm transition min-h-[44px]"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        <span>Als Kurzrapport kopieren</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick="printReport()"
+                        class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-sm transition min-h-[44px]"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        <span>Drucken / Als PDF speichern</span>
+                    </button>
+                </div>
+
+                <button
+                    type="button"
+                    onclick="closeReportModal()"
+                    class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-sm transition min-h-[44px]"
+                >
+                    Schliessen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL: EINZELNEN EINTRAG LÖSCHEN (OHNE confirm())                     -->
+    <!-- ===================================================================== -->
+    <div
+        id="confirm-modal"
+        class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+    >
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-extrabold text-slate-900">Eintrag löschen?</h3>
+                    <p id="confirm-modal-text" class="text-sm text-slate-600 mt-1"></p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2.5 pt-2">
+                <button
+                    type="button"
+                    onclick="closeDeleteModal()"
+                    class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition min-h-[44px]"
+                >
+                    Abbrechen
+                </button>
+                <button
+                    type="button"
+                    id="confirm-delete-btn"
+                    class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition min-h-[44px]"
+                >
+                    Endgültig löschen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL: ALLE DATEN LÖSCHEN (DOPPELTE SICHERHEITSABFRAGE)               -->
+    <!-- ===================================================================== -->
+    <div
+        id="delete-all-modal"
+        class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+    >
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border-2 border-red-200 space-y-4">
+            <div class="flex items-start gap-3">
+                <div class="w-11 h-11 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-extrabold text-slate-900">Neue Kontrolle starten?</h3>
+                    <p id="delete-all-desc" class="text-sm text-slate-600 mt-1"></p>
+                </div>
+            </div>
+
+            <!-- Schritt 1 Hinweis & CSV Backup-Option -->
+            <div id="delete-all-step1" class="space-y-3">
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 font-medium">
+                    Tipp: Exportieren Sie die aktuelle Kontrolle zuerst als Excel-CSV oder PDF, bevor Sie das Protokoll leeren.
+                </div>
+                <div class="flex flex-col sm:flex-row justify-end gap-2 pt-1">
+                    <button
+                        type="button"
+                        onclick="exportCSV()"
+                        class="px-3.5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-sm transition min-h-[44px]"
+                    >
+                        Zuerst CSV sichern
+                    </button>
+                    <button
+                        type="button"
+                        onclick="closeDeleteAllModal()"
+                        class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition min-h-[44px]"
+                    >
+                        Abbrechen
+                    </button>
+                    <button
+                        type="button"
+                        onclick="goToDeleteAllStep2()"
+                        class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-sm transition min-h-[44px]"
+                    >
+                        Weiter (1/2)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Schritt 2: Zweite explizite Sicherheitsabfrage -->
+            <div id="delete-all-step2" class="hidden space-y-4">
+                <div class="bg-red-50 border border-red-300 rounded-xl p-3.5 text-sm text-red-900 font-semibold">
+                    Achtung (Sicherheitsabfrage 2/2): Alle gespeicherten Fahrzeuge und Feststellungen dieser Kontrolle werden unwiderruflich gelöscht.
+                </div>
+                <label class="flex items-start gap-2.5 cursor-pointer select-none p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                    <input
+                        type="checkbox"
+                        id="delete-all-checkbox"
+                        onchange="toggleFinalDeleteButton()"
+                        class="mt-0.5 w-5 h-5 rounded text-red-600 focus:ring-red-500 border-slate-300"
+                    >
+                    <span class="text-xs sm:text-sm font-semibold text-slate-800">Ja, ich bestätige, dass alle Daten dieser Kontrolle endgültig gelöscht werden sollen.</span>
+                </label>
+                <div class="flex justify-end gap-2.5">
+                    <button
+                        type="button"
+                        onclick="closeDeleteAllModal()"
+                        class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition min-h-[44px]"
+                    >
+                        Abbrechen
+                    </button>
+                    <button
+                        type="button"
+                        id="delete-all-final-btn"
+                        disabled
+                        onclick="confirmDeleteAll()"
+                        class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white font-bold text-sm transition min-h-[44px]"
+                    >
+                        Alles unwiderruflich löschen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- TOAST-BENACHRICHTIGUNGEN (STATT alert())                              -->
+    <!-- ===================================================================== -->
+    <div id="toast-container" class="fixed bottom-4 right-4 left-4 sm:left-auto z-50 flex flex-col gap-2 pointer-events-none items-end"></div>
+
+    <!-- ===================================================================== -->
+    <!-- JAVASCRIPT-LOGIK (STATE, VALIDIERUNG, RENDERING, EXPORTE)             -->
+    <!-- ===================================================================== -->
+    <script>
+        'use strict';
+
+        // ---------------------------------------------------------------------
+        // 1. KONSTANTEN & SCHNELLAUSWAHL-KATEGORIEN (SCHWEIZER SVG / VTS / ARV)
+        // ---------------------------------------------------------------------
+        const STORAGE_KEY_CARS = 'carkontrolle_pro_v2_cars';
+        const STORAGE_KEY_LEGACY = 'carkontrolle_data';
+        const STORAGE_KEY_META = 'carkontrolle_pro_v2_meta';
+
+        const SVG_CHIPS = [
+            'ARV 1 (Lenk-/Ruhezeit)',
+            'Tachograf / Manipulation',
+            'Lizenz / Kabotage',
+            'Überladung / Gewicht',
+            'Gurttragpflicht',
+            'Gepäck / Ladungssicherung',
+            'Führerausweis / CZV',
+            'Alkohol / Fahrunfähigkeit'
+        ];
+
+        const TECH_CHIPS = [
+            'Bremsanlage',
+            'Reifen / Profil',
+            'Beleuchtung',
+            'Notausgänge / Nothämmer',
+            'Feuerlöscher / Apotheke',
+            'Lenkung / Achsen',
+            'Flüssigkeitsverlust',
+            'Scheiben / Sicht'
+        ];
+
+        const HERKUNFT_META = {
+            CH:     { label: 'Schweiz (CH)', short: 'CH', flag: '🇨🇭', badgeClass: 'bg-red-50 text-red-800 border-red-200' },
+            EU:     { label: 'EU-Staat',     short: 'EU', flag: '🇪🇺', badgeClass: 'bg-blue-50 text-blue-800 border-blue-200' },
+            Dritte: { label: 'Drittstaat',   short: 'Drittstaat', flag: '🌍', badgeClass: 'bg-purple-50 text-purple-800 border-purple-200' }
+        };
+
+        // ---------------------------------------------------------------------
+        // 2. APPLIKATIONS-ZUSTAND (STATE)
+        // ---------------------------------------------------------------------
+        let cars = [];
+        let meta = { kontrollort: '' };
+
+        // Aktueller Formularzustand
+        let formState = {
+            editingId: null,
+            herkunft: 'CH',
+            svgStatus: 'keine',      // 'keine' | 'obv' | 'anzeige'
+            svgDetails: [],
+            techStatus: 'keine',     // 'keine' | 'mangel' | 'anzeige'
+            techDetails: [],
+            ripol: false,
+            stilllegung: false
+        };
+
+        // Logbuch-Ansicht & Filter
+        let currentFilter = 'all';
+        let currentSearch = '';
+        let viewMode = 'cards'; // 'cards' | 'table'
+        let pendingDeleteId = null;
+
+        // ---------------------------------------------------------------------
+        // 3. HILFSFUNKTIONEN (XSS-SCHUTZ, DATUM/ZEIT, AUTO-INCREMENT)
+        // ---------------------------------------------------------------------
+
+        /**
+         * Sicheres HTML-Escaping gegen XSS bei sämtlichen Benutzereingaben.
+         */
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        /**
+         * Formatiert Datum und Uhrzeit im Schweizer Format (DD.MM.YYYY / HH:MM).
+         */
+        function formatDateTime(dateObj) {
+            const d = dateObj instanceof Date ? dateObj : new Date(dateObj);
+            const pad = n => String(n).padStart(2, '0');
+            return {
+                datumStr: `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`,
+                zeitStr: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+                isoDateFile: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+            };
+        }
+
+        /**
+         * Berechnet die nächste vorgeschlagene Kontrollnummer (+1) anhand des zuletzt erfassten Cars.
+         * Beispiel: "K-001" -> "K-002", "104" -> "105", leer -> "K-001".
+         */
+        function suggestNextKontrollnummer() {
+            if (!cars.length) return 'K-001';
+            // Neuestes erfasstes Fahrzeug (cars[0], da neueste oben stehen)
+            const lastNum = String(cars[0].kontrollnummer || '').trim();
+            if (!lastNum) return 'K-001';
+
+            const match = lastNum.match(/^(.*?)(\d+)(\D*)$/);
+            if (match) {
+                const prefix = match[1];
+                const digits = match[2];
+                const suffix = match[3];
+                const nextVal = String(parseInt(digits, 10) + 1).padStart(digits.length, '0');
+                return `${prefix}${nextVal}${suffix}`;
+            }
+            return `${lastNum}-2`;
+        }
+
+        /**
+         * Ermittelt die Ampel-Schwere eines Fahrzeugs:
+         * 'red' = Anzeige (SVG oder Technik) ODER RIPOL ODER Stilllegung
+         * 'amber' = OBV/Verwarnung ODER Mängelbericht (ohne Anzeige/RIPOL/Stilllegung)
+         * 'green' = Alles i.O.
+         */
+        function getCarSeverity(car) {
+            if (car.svgStatus === 'anzeige' || car.techStatus === 'anzeige' || car.ripol || car.stilllegung) {
+                return 'red';
+            }
+            if (car.svgStatus === 'obv' || car.techStatus === 'mangel') {
+                return 'amber';
+            }
+            return 'green';
+        }
+
+        /**
+         * Prüft, ob ein Car irgendeine Beanstandung aufweist.
+         */
+        function hasCarIssue(car) {
+            return getCarSeverity(car) !== 'green';
+        }
+
+        /**
+         * Anzahl Anzeigen für einen einzelnen Car (0, 1 oder 2).
+         */
+        function getCarAnzeigenCount(car) {
+            return (car.svgStatus === 'anzeige' ? 1 : 0) + (car.techStatus === 'anzeige' ? 1 : 0);
+        }
+
+        /**
+         * Zeigt eine moderne Toast-Nachricht an (ersetzt alert()).
+         */
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const styles = {
+                success: 'bg-emerald-700 text-white border-emerald-500',
+                info:    'bg-slate-900 text-white border-slate-700',
+                warning: 'bg-amber-600 text-white border-amber-400',
+                error:   'bg-red-700 text-white border-red-500'
             };
 
-            cars.push(car);
-            saveAndRender();
-            
-            // Reset Form
-            document.getElementById('personen').value = '';
-            document.getElementById('grund').value = '';
-        }
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl border text-sm font-semibold max-w-sm transition-all duration-300 transform translate-y-2 opacity-0 ${styles[type] || styles.info}`;
+            toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
 
-        function saveAndRender() {
-            localStorage.setItem('carkontrolle_data', JSON.stringify(cars));
-            renderList();
-            updateStats();
-        }
-
-        function renderList() {
-            const list = document.getElementById('car-list');
-            list.innerHTML = '';
-            cars.forEach(car => {
-                list.innerHTML += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="p-2 border">${car.herkunft}</td>
-                        <td class="p-2 border">${car.personen}</td>
-                        <td class="p-2 border ${car.ripol === 'Ja' ? 'text-red-600 font-bold' : ''}">${car.ripol}</td>
-                        <td class="p-2 border">${car.mangel}</td>
-                        <td class="p-2 border ${car.stilllegung === 'Ja' ? 'bg-orange-100 text-orange-800' : ''}">${car.stilllegung}</td>
-                        <td class="p-2 border">
-                            <button onclick="deleteCar(${car.id})" class="text-red-500">X</button>
-                        </td>
-                    </tr>
-                `;
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
             });
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
         }
 
-        function updateStats() {
-            document.getElementById('stat-total').innerText = cars.length;
-            document.getElementById('stat-personen').innerText = cars.reduce((sum, c) => sum + c.personen, 0);
-            document.getElementById('stat-ripol').innerText = cars.filter(c => c.ripol === 'Ja').length;
-            document.getElementById('stat-still').innerText = cars.filter(c => c.stilllegung === 'Ja').length;
-        }
+        // ---------------------------------------------------------------------
+        // 4. PERSISTENZ (LOCALSTORAGE + MIGRATION ALTER DATEN)
+        // ---------------------------------------------------------------------
+        function loadFromStorage() {
+            try {
+                const savedMeta = localStorage.getItem(STORAGE_KEY_META);
+                if (savedMeta) {
+                    meta = JSON.parse(savedMeta) || { kontrollort: '' };
+                }
 
-        function deleteCar(id) {
-            cars = cars.filter(c => c.id !== id);
-            saveAndRender();
-        }
-
-        function clearData() {
-            if(confirm("Wirklich alle Daten löschen?")) {
+                const savedCars = localStorage.getItem(STORAGE_KEY_CARS);
+                if (savedCars) {
+                    cars = JSON.parse(savedCars) || [];
+                } else {
+                    // Nahtlose Migration falls Daten aus der Vorgängerversion existieren
+                    const legacyRaw = localStorage.getItem(STORAGE_KEY_LEGACY);
+                    if (legacyRaw) {
+                        const legacyCars = JSON.parse(legacyRaw) || [];
+                        if (Array.isArray(legacyCars) && legacyCars.length > 0) {
+                            const nowFormatted = formatDateTime(new Date());
+                            cars = legacyCars.map((c, idx) => ({
+                                id: c.id || Date.now() + idx,
+                                kontrollnummer: `K-${String(idx + 1).padStart(3, '0')}`,
+                                schild: '',
+                                herkunft: ['CH', 'EU', 'Dritte'].includes(c.herkunft) ? c.herkunft : 'CH',
+                                personen: parseInt(c.personen, 10) || 0,
+                                svgStatus: 'keine',
+                                svgDetails: [],
+                                techStatus: c.mangel === 'Ja' ? 'anzeige' : 'keine',
+                                techDetails: [],
+                                ripol: c.ripol === 'Ja',
+                                stilllegung: c.stilllegung === 'Ja',
+                                bemerkung: c.grund || '',
+                                timestamp: new Date().toISOString(),
+                                zeitStr: nowFormatted.zeitStr,
+                                datumStr: nowFormatted.datumStr
+                            })).reverse();
+                            saveCarsToStorage();
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Fehler beim Laden aus localStorage:', err);
                 cars = [];
-                saveAndRender();
             }
         }
 
-        function exportCSV() {
-            let csv = "Herkunft;Personen;RIPOL;Mangel;Stilllegung;Grund\n";
-            cars.forEach(c => {
-                csv += `${c.herkunft};${c.personen};${c.ripol};${c.mangel};${c.stilllegung};${c.grund}\n`;
-            });
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.setAttribute('href', url);
-            a.setAttribute('download', 'Carkontrolle_Export.csv');
-            a.click();
+        function saveCarsToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY_CARS, JSON.stringify(cars));
+            } catch (err) {
+                console.error('Speicherfehler:', err);
+                showToast('Hinweis: Lokaler Speicher nicht verfügbar.', 'warning');
+            }
         }
 
-        // Initiales Laden
-        renderList();
-        updateStats();
+        function saveMetaToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY_META, JSON.stringify(meta));
+            } catch (err) {
+                console.error('Meta-Speicherfehler:', err);
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // 5. FORMULAR-STEUERUNG (BUTTONS, CHIPS, BEARBEITUNGSMODUS)
+        // ---------------------------------------------------------------------
+        function selectHerkunft(val) {
+            formState.herkunft = val;
+            document.querySelectorAll('.herkunft-btn').forEach(btn => {
+                const isSelected = btn.dataset.herkunft === val;
+                btn.className = 'herkunft-btn flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-bold text-sm sm:text-base transition min-h-[48px] ' + (
+                    isSelected
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-200'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400 hover:bg-slate-50'
+                );
+            });
+        }
+
+        function selectSvgStatus(val) {
+            formState.svgStatus = val;
+            if (val === 'keine') {
+                formState.svgDetails = [];
+            }
+            document.querySelectorAll('.svg-status-btn').forEach(btn => {
+                const v = btn.dataset.svg;
+                const isSelected = v === val;
+                let style = 'bg-white text-slate-700 border-slate-200 hover:border-slate-400';
+                if (isSelected) {
+                    if (v === 'keine')   style = 'bg-emerald-600 text-white border-emerald-600 shadow-sm';
+                    if (v === 'obv')     style = 'bg-amber-500 text-white border-amber-500 shadow-sm';
+                    if (v === 'anzeige') style = 'bg-red-600 text-white border-red-600 shadow-sm';
+                }
+                btn.className = `svg-status-btn px-2 py-2.5 rounded-xl border-2 text-xs sm:text-sm font-bold transition min-h-[46px] text-center ${style}`;
+            });
+
+            const chipBox = document.getElementById('svg-chips-container');
+            chipBox.classList.toggle('hidden', val === 'keine');
+            renderChips('svg');
+        }
+
+        function selectTechStatus(val) {
+            formState.techStatus = val;
+            if (val === 'keine') {
+                formState.techDetails = [];
+            }
+            document.querySelectorAll('.tech-status-btn').forEach(btn => {
+                const v = btn.dataset.tech;
+                const isSelected = v === val;
+                let style = 'bg-white text-slate-700 border-slate-200 hover:border-slate-400';
+                if (isSelected) {
+                    if (v === 'keine')   style = 'bg-emerald-600 text-white border-emerald-600 shadow-sm';
+                    if (v === 'mangel')  style = 'bg-amber-500 text-white border-amber-500 shadow-sm';
+                    if (v === 'anzeige') style = 'bg-red-600 text-white border-red-600 shadow-sm';
+                }
+                btn.className = `tech-status-btn px-2 py-2.5 rounded-xl border-2 text-xs sm:text-sm font-bold transition min-h-[46px] text-center ${style}`;
+            });
+
+            const chipBox = document.getElementById('tech-chips-container');
+            chipBox.classList.toggle('hidden', val === 'keine');
+            renderChips('tech');
+        }
+
+        function renderChips(type) {
+            const isSvg = type === 'svg';
+            const listEl = document.getElementById(isSvg ? 'svg-chips-list' : 'tech-chips-list');
+            const items = isSvg ? SVG_CHIPS : TECH_CHIPS;
+            const selectedArr = isSvg ? formState.svgDetails : formState.techDetails;
+            const isAnzeige = isSvg ? formState.svgStatus === 'anzeige' : formState.techStatus === 'anzeige';
+
+            listEl.innerHTML = '';
+            items.forEach(label => {
+                const active = selectedArr.includes(label);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.onclick = () => toggleChip(type, label);
+
+                const activeClass = isAnzeige
+                    ? 'bg-red-600 text-white border-red-600 shadow-sm'
+                    : 'bg-amber-500 text-white border-amber-500 shadow-sm';
+                const inactiveClass = 'bg-white text-slate-700 border-slate-300 hover:border-slate-400 hover:bg-slate-100';
+
+                btn.className = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition min-h-[36px] ${active ? activeClass : inactiveClass}`;
+                btn.innerHTML = `${active ? '✓ ' : '+ '}${escapeHtml(label)}`;
+                listEl.appendChild(btn);
+            });
+        }
+
+        function toggleChip(type, label) {
+            const arr = type === 'svg' ? formState.svgDetails : formState.techDetails;
+            const idx = arr.indexOf(label);
+            if (idx > -1) {
+                arr.splice(idx, 1);
+            } else {
+                arr.push(label);
+            }
+            renderChips(type);
+        }
+
+        function selectRipol(val) {
+            formState.ripol = Boolean(val);
+            document.querySelectorAll('.ripol-btn').forEach(btn => {
+                const bVal = btn.dataset.ripol === 'true';
+                const isSelected = bVal === formState.ripol;
+                let style = 'bg-white text-slate-700 border-slate-200 hover:border-slate-400';
+                if (isSelected) {
+                    style = bVal
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                        : 'bg-slate-700 text-white border-slate-700 shadow-sm';
+                }
+                btn.className = `ripol-btn px-3 py-2.5 rounded-xl border-2 text-sm font-bold transition min-h-[46px] ${style}`;
+            });
+        }
+
+        function selectStilllegung(val) {
+            formState.stilllegung = Boolean(val);
+            document.querySelectorAll('.still-btn').forEach(btn => {
+                const bVal = btn.dataset.still === 'true';
+                const isSelected = bVal === formState.stilllegung;
+                let style = 'bg-white text-slate-700 border-slate-200 hover:border-slate-400';
+                if (isSelected) {
+                    style = bVal
+                        ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                        : 'bg-slate-700 text-white border-slate-700 shadow-sm';
+                }
+                btn.className = `still-btn px-3 py-2.5 rounded-xl border-2 text-sm font-bold transition min-h-[46px] ${style}`;
+            });
+        }
+
+        function applyAutoIncrement() {
+            const input = document.getElementById('kontrollnummer');
+            input.value = suggestNextKontrollnummer();
+            checkDuplicateKontrollnummer();
+            input.focus();
+        }
+
+        function checkDuplicateKontrollnummer() {
+            const val = document.getElementById('kontrollnummer').value.trim().toLowerCase();
+            const hint = document.getElementById('duplicate-hint');
+            if (!val) {
+                hint.classList.add('hidden');
+                return;
+            }
+            const exists = cars.some(c =>
+                c.kontrollnummer.trim().toLowerCase() === val &&
+                c.id !== formState.editingId
+            );
+            hint.classList.toggle('hidden', !exists);
+        }
+
+        function resetForm() {
+            formState = {
+                editingId: null,
+                herkunft: 'CH',
+                svgStatus: 'keine',
+                svgDetails: [],
+                techStatus: 'keine',
+                techDetails: [],
+                ripol: false,
+                stilllegung: false
+            };
+
+            document.getElementById('kontrollnummer').value = suggestNextKontrollnummer();
+            document.getElementById('schild').value = '';
+            document.getElementById('personen').value = '';
+            document.getElementById('bemerkung').value = '';
+            document.getElementById('form-error').classList.add('hidden');
+            document.getElementById('duplicate-hint').classList.add('hidden');
+
+            // Bearbeitungsmodus-UI zurücksetzen
+            document.getElementById('form-header-bar').className = 'bg-slate-800 text-white px-5 py-3.5 flex items-center justify-between gap-3';
+            document.getElementById('form-mode-dot').className = 'w-3 h-3 rounded-full bg-blue-400 shrink-0';
+            document.getElementById('form-title').textContent = 'Neuen Car erfassen';
+            document.getElementById('edit-badge').classList.add('hidden');
+            document.getElementById('submit-btn-text').textContent = 'Car erfassen';
+            document.getElementById('submit-btn').className = 'flex-1 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-base py-3.5 px-6 rounded-xl shadow-md transition min-h-[52px]';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+
+            selectHerkunft('CH');
+            selectSvgStatus('keine');
+            selectTechStatus('keine');
+            selectRipol(false);
+            selectStilllegung(false);
+        }
+
+        function startEditCar(id) {
+            const car = cars.find(c => c.id === id);
+            if (!car) return;
+
+            formState.editingId = car.id;
+            formState.herkunft = car.herkunft;
+            formState.svgStatus = car.svgStatus;
+            formState.svgDetails = [...(car.svgDetails || [])];
+            formState.techStatus = car.techStatus;
+            formState.techDetails = [...(car.techDetails || [])];
+            formState.ripol = Boolean(car.ripol);
+            formState.stilllegung = Boolean(car.stilllegung);
+
+            document.getElementById('kontrollnummer').value = car.kontrollnummer;
+            document.getElementById('schild').value = car.schild || '';
+            document.getElementById('personen').value = car.personen;
+            document.getElementById('bemerkung').value = car.bemerkung || '';
+            document.getElementById('form-error').classList.add('hidden');
+
+            // UI für Bearbeitungsmodus anpassen
+            document.getElementById('form-header-bar').className = 'bg-amber-600 text-white px-5 py-3.5 flex items-center justify-between gap-3';
+            document.getElementById('form-mode-dot').className = 'w-3 h-3 rounded-full bg-white shrink-0 animate-pulse';
+            document.getElementById('form-title').textContent = `Car #${car.kontrollnummer} bearbeiten`;
+            document.getElementById('edit-badge').classList.remove('hidden');
+            document.getElementById('submit-btn-text').textContent = 'Änderungen speichern';
+            document.getElementById('submit-btn').className = 'flex-1 inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-base py-3.5 px-6 rounded-xl shadow-md transition min-h-[52px]';
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+
+            selectHerkunft(formState.herkunft);
+            selectSvgStatus(formState.svgStatus);
+            selectTechStatus(formState.techStatus);
+            selectRipol(formState.ripol);
+            selectStilllegung(formState.stilllegung);
+            checkDuplicateKontrollnummer();
+
+            // Sanft zum Formular scrollen
+            document.getElementById('form-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function cancelEdit() {
+            resetForm();
+            showToast('Bearbeitung abgebrochen.', 'info');
+        }
+
+        function handleFormSubmit(event) {
+            event.preventDefault();
+
+            const kontrollnummer = document.getElementById('kontrollnummer').value.trim();
+            const schild = document.getElementById('schild').value.trim();
+            const personenRaw = document.getElementById('personen').value.trim();
+            const personen = personenRaw === '' ? 0 : Math.max(0, parseInt(personenRaw, 10) || 0);
+            const bemerkung = document.getElementById('bemerkung').value.trim();
+            const errBox = document.getElementById('form-error');
+            const errText = document.getElementById('form-error-text');
+
+            if (!kontrollnummer) {
+                errText.textContent = 'Bitte eine Kontrollnummer eingeben (Pflichtfeld, z.B. K-001).';
+                errBox.classList.remove('hidden');
+                document.getElementById('kontrollnummer').focus();
+                return;
+            }
+            errBox.classList.add('hidden');
+
+            if (formState.editingId !== null) {
+                // Bestehenden Eintrag aktualisieren (Zeitstempel der Erstkontrolle beibehalten)
+                const idx = cars.findIndex(c => c.id === formState.editingId);
+                if (idx !== -1) {
+                    cars[idx] = {
+                        ...cars[idx],
+                        kontrollnummer,
+                        schild,
+                        herkunft: formState.herkunft,
+                        personen,
+                        svgStatus: formState.svgStatus,
+                        svgDetails: [...formState.svgDetails],
+                        techStatus: formState.techStatus,
+                        techDetails: [...formState.techDetails],
+                        ripol: formState.ripol,
+                        stilllegung: formState.stilllegung,
+                        bemerkung
+                    };
+                    saveCarsToStorage();
+                    renderAll();
+                    resetForm();
+                    showToast(`Car #${kontrollnummer} wurde aktualisiert.`, 'success');
+                }
+            } else {
+                // Neuen Eintrag mit aktueller Uhrzeit erfassen
+                const now = new Date();
+                const dt = formatDateTime(now);
+                const newCar = {
+                    id: Date.now() + Math.floor(Math.random() * 1000),
+                    kontrollnummer,
+                    schild,
+                    herkunft: formState.herkunft,
+                    personen,
+                    svgStatus: formState.svgStatus,
+                    svgDetails: [...formState.svgDetails],
+                    techStatus: formState.techStatus,
+                    techDetails: [...formState.techDetails],
+                    ripol: formState.ripol,
+                    stilllegung: formState.stilllegung,
+                    bemerkung,
+                    timestamp: now.toISOString(),
+                    zeitStr: dt.zeitStr,
+                    datumStr: dt.datumStr
+                };
+
+                // Neuesten Car oben einfügen
+                cars.unshift(newCar);
+                saveCarsToStorage();
+                renderAll();
+                resetForm();
+                showToast(`Car #${kontrollnummer} erfolgreich erfasst (${dt.zeitStr} Uhr).`, 'success');
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // 6. STATISTIK-BERECHNUNG & DASHBOARD-RENDERING
+        // ---------------------------------------------------------------------
+        function computeStats() {
+            const totalCars = cars.length;
+            const ch = cars.filter(c => c.herkunft === 'CH').length;
+            const eu = cars.filter(c => c.herkunft === 'EU').length;
+            const dritte = cars.filter(c => c.herkunft === 'Dritte').length;
+
+            const totalPax = cars.reduce((sum, c) => sum + (parseInt(c.personen, 10) || 0), 0);
+            const avgPax = totalCars > 0 ? Math.round(totalPax / totalCars) : 0;
+
+            const svgAnzeigen = cars.filter(c => c.svgStatus === 'anzeige').length;
+            const svgObv = cars.filter(c => c.svgStatus === 'obv').length;
+            const svgAll = svgAnzeigen + svgObv;
+
+            const techAnzeigen = cars.filter(c => c.techStatus === 'anzeige').length;
+            const techMangel = cars.filter(c => c.techStatus === 'mangel').length;
+            const techAll = techAnzeigen + techMangel;
+
+            const totalAnzeigen = svgAnzeigen + techAnzeigen;
+            const carsWithAnzeige = cars.filter(c => c.svgStatus === 'anzeige' || c.techStatus === 'anzeige').length;
+            const totalWiderhandlungen = svgAll + techAll;
+
+            const ripolCount = cars.filter(c => c.ripol).length;
+            const stillCount = cars.filter(c => c.stilllegung).length;
+
+            const issueCars = cars.filter(c => hasCarIssue(c)).length;
+            const okCars = totalCars - issueCars;
+            const quote = totalCars > 0 ? Math.round((issueCars / totalCars) * 100) : 0;
+
+            // Häufigkeit aller Mängel-Chips für Top-Feststellungen berechnen
+            const chipFrequency = {};
+            cars.forEach(c => {
+                (c.svgDetails || []).forEach(d => {
+                    const key = `SVG: ${d}`;
+                    chipFrequency[key] = (chipFrequency[key] || 0) + 1;
+                });
+                (c.techDetails || []).forEach(d => {
+                    const key = `VTS: ${d}`;
+                    chipFrequency[key] = (chipFrequency[key] || 0) + 1;
+                });
+            });
+            const topFindings = Object.entries(chipFrequency)
+                .sort((a, b) => b[1] - a[1]);
+
+            return {
+                totalCars, ch, eu, dritte,
+                totalPax, avgPax,
+                svgAnzeigen, svgObv, svgAll,
+                techAnzeigen, techMangel, techAll,
+                totalAnzeigen, carsWithAnzeige, totalWiderhandlungen,
+                ripolCount, stillCount,
+                issueCars, okCars, quote,
+                topFindings
+            };
+        }
+
+        function renderDashboard() {
+            const s = computeStats();
+
+            document.getElementById('stat-total-cars').textContent = s.totalCars;
+            document.getElementById('stat-ch').textContent = s.ch;
+            document.getElementById('stat-eu').textContent = s.eu;
+            document.getElementById('stat-dritte').textContent = s.dritte;
+
+            document.getElementById('stat-total-pax').textContent = s.totalPax;
+            document.getElementById('stat-avg-pax').textContent = s.avgPax;
+
+            document.getElementById('stat-anzeigen-total').textContent = s.totalAnzeigen;
+            document.getElementById('stat-anzeigen-svg').textContent = s.svgAnzeigen;
+            document.getElementById('stat-anzeigen-tech').textContent = s.techAnzeigen;
+            document.getElementById('stat-anzeigen-cars').textContent = s.carsWithAnzeige;
+
+            document.getElementById('stat-widerhandlungen-total').textContent = s.totalWiderhandlungen;
+            document.getElementById('stat-svg-all').textContent = s.svgAll;
+            document.getElementById('stat-tech-all').textContent = s.techAll;
+
+            document.getElementById('stat-ripol').textContent = s.ripolCount;
+            document.getElementById('stat-stilllegung').textContent = s.stillCount;
+
+            document.getElementById('stat-quote').textContent = s.quote;
+            document.getElementById('stat-ok-cars').textContent = s.okCars;
+            document.getElementById('stat-issue-cars').textContent = s.issueCars;
+
+            const bar = document.getElementById('stat-quote-bar');
+            bar.style.width = `${s.quote}%`;
+            bar.className = 'h-2 rounded-full transition-all duration-300 ' + (
+                s.quote === 0 ? 'bg-emerald-500' : (s.quote >= 40 ? 'bg-red-500' : 'bg-amber-500')
+            );
+        }
+
+        // ---------------------------------------------------------------------
+        // 7. KONTROLL-LOGBUCH: SUCHE, FILTER, KARTEN- & TABELLEN-ANSICHT
+        // ---------------------------------------------------------------------
+        function setFilter(filter) {
+            currentFilter = filter;
+            updateFilterButtonsUI();
+            renderLogbook();
+        }
+
+        function updateFilterButtonsUI() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                const isActive = btn.dataset.filter === currentFilter;
+                btn.className = 'filter-btn px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold border transition min-h-[36px] ' + (
+                    isActive
+                        ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-900'
+                );
+            });
+        }
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            const cardsBtn = document.getElementById('view-cards-btn');
+            const tableBtn = document.getElementById('view-table-btn');
+
+            const activeCls = 'inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition min-h-[38px] bg-white text-slate-900 shadow-sm';
+            const inactiveCls = 'inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition min-h-[38px] text-slate-500 hover:text-slate-800';
+
+            cardsBtn.className = mode === 'cards' ? activeCls : inactiveCls;
+            tableBtn.className = mode === 'table' ? activeCls : inactiveCls;
+
+            renderLogbook();
+        }
+
+        function handleSearchChange(val) {
+            currentSearch = val.trim().toLowerCase();
+            document.getElementById('clear-search-btn').classList.toggle('hidden', !currentSearch);
+            renderLogbook();
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            handleSearchChange('');
+        }
+
+        function getFilteredCars() {
+            return cars.filter(car => {
+                // Kategorie-Filter
+                if (currentFilter === 'issues' && !hasCarIssue(car)) return false;
+                if (currentFilter === 'anzeigen' && getCarAnzeigenCount(car) === 0) return false;
+                if (currentFilter === 'stillgelegt' && !car.stilllegung) return false;
+                if (['CH', 'EU', 'Dritte'].includes(currentFilter) && car.herkunft !== currentFilter) return false;
+
+                // Freitext-Suche
+                if (currentSearch) {
+                    const haystack = [
+                        car.kontrollnummer,
+                        car.schild,
+                        car.bemerkung,
+                        car.herkunft,
+                        HERKUNFT_META[car.herkunft]?.label || '',
+                        ...(car.svgDetails || []),
+                        ...(car.techDetails || [])
+                    ].join(' ').toLowerCase();
+                    if (!haystack.includes(currentSearch)) return false;
+                }
+                return true;
+            });
+        }
+
+        function getStatusBadgesHtml(car) {
+            const badges = [];
+
+            // SVG Badge
+            if (car.svgStatus === 'anzeige') {
+                badges.push(`<span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-red-100 text-red-800 border border-red-300">SVG: Anzeige</span>`);
+            } else if (car.svgStatus === 'obv') {
+                badges.push(`<span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">SVG: OBV / Verwarn.</span>`);
+            } else {
+                badges.push(`<span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">SVG: i.O.</span>`);
+            }
+
+            // Technik Badge
+            if (car.techStatus === 'anzeige') {
+                badges.push(`<span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-red-100 text-red-800 border border-red-300">Technik: Anzeige</span>`);
+            } else if (car.techStatus === 'mangel') {
+                badges.push(`<span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">Technik: Mängelbericht</span>`);
+            } else {
+                badges.push(`<span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Technik: i.O.</span>`);
+            }
+
+            // RIPOL Badge
+            if (car.ripol) {
+                badges.push(`<span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-rose-600 text-white shadow-sm">⚠ RIPOL-Treffer</span>`);
+            }
+
+            // Stilllegung Badge
+            if (car.stilllegung) {
+                badges.push(`<span class="inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-orange-600 text-white shadow-sm">⛔ Stillgelegt</span>`);
+            }
+
+            return badges.join('');
+        }
+
+        function renderLogbook() {
+            const container = document.getElementById('logbook-container');
+            const filtered = getFilteredCars();
+            document.getElementById('log-count-badge').textContent =
+                filtered.length === cars.length ? `${cars.length}` : `${filtered.length} / ${cars.length}`;
+
+            if (cars.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                        <div class="w-14 h-14 mx-auto rounded-2xl bg-slate-200 text-slate-500 flex items-center justify-center mb-3">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                        </div>
+                        <p class="text-slate-700 font-bold text-base">Noch keine Cars erfasst</p>
+                        <p class="text-slate-500 text-sm mt-1">Erfassen Sie oben den ersten Reisecar, um das Kontroll-Logbuch zu starten.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 px-4 bg-slate-50 rounded-2xl border border-slate-200">
+                        <p class="text-slate-700 font-bold">Keine Treffer für den aktuellen Filter oder Suchbegriff.</p>
+                        <button type="button" onclick="setFilter('all'); clearSearch();" class="mt-3 px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-700 transition">
+                            Filter zurücksetzen
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            if (viewMode === 'cards') {
+                renderCardsView(container, filtered);
+            } else {
+                renderTableView(container, filtered);
+            }
+        }
+
+        function renderCardsView(container, list) {
+            const html = list.map(car => {
+                const sev = getCarSeverity(car);
+                const hMeta = HERKUNFT_META[car.herkunft] || HERKUNFT_META.CH;
+
+                const borderLeftClass = sev === 'red'
+                    ? 'border-l-[6px] border-l-red-600'
+                    : (sev === 'amber' ? 'border-l-[6px] border-l-amber-500' : 'border-l-[6px] border-l-emerald-500');
+
+                // Box "Feststellungen / Was nicht gut war"
+                const hasIssue = hasCarIssue(car);
+                let findingsBoxHtml = '';
+
+                if (hasIssue) {
+                    const svgTags = (car.svgDetails || []).map(d =>
+                        `<span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold ${car.svgStatus === 'anzeige' ? 'bg-red-100 text-red-900 border border-red-200' : 'bg-amber-100 text-amber-900 border border-amber-200'}">SVG: ${escapeHtml(d)}</span>`
+                    ).join('');
+
+                    const techTags = (car.techDetails || []).map(d =>
+                        `<span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-bold ${car.techStatus === 'anzeige' ? 'bg-red-100 text-red-900 border border-red-200' : 'bg-amber-100 text-amber-900 border border-amber-200'}">VTS: ${escapeHtml(d)}</span>`
+                    ).join('');
+
+                    const extraAlerts = [];
+                    if (car.ripol) extraAlerts.push('RIPOL-Ausschreibung vorhanden');
+                    if (car.stilllegung) extraAlerts.push('Fahrzeug stillgelegt (Weiterfahrtsverbot)');
+
+                    const boxTheme = sev === 'red'
+                        ? 'bg-red-50/90 border-red-200'
+                        : 'bg-amber-50/90 border-amber-200';
+                    const titleColor = sev === 'red' ? 'text-red-900' : 'text-amber-900';
+
+                    findingsBoxHtml = `
+                        <div class="mt-3 p-3.5 rounded-xl border ${boxTheme} space-y-2">
+                            <div class="text-xs font-extrabold uppercase tracking-wider ${titleColor} flex items-center gap-1.5">
+                                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <span>Feststellungen / Was nicht gut war</span>
+                            </div>
+                            ${(svgTags || techTags) ? `<div class="flex flex-wrap gap-1.5">${svgTags}${techTags}</div>` : ''}
+                            ${extraAlerts.length ? `<div class="text-xs font-bold text-red-800">${extraAlerts.map(a => `• ${escapeHtml(a)}`).join(' &nbsp; ')}</div>` : ''}
+                            ${car.bemerkung
+                                ? `<p class="text-sm text-slate-800 whitespace-pre-line leading-relaxed bg-white/70 px-3 py-2 rounded-lg border border-black/5">${escapeHtml(car.bemerkung)}</p>`
+                                : (!svgTags && !techTags && !extraAlerts.length ? `<p class="text-xs text-slate-600 italic">Keine zusätzlichen Details eingetragen.</p>` : '')
+                            }
+                        </div>
+                    `;
+                } else {
+                    findingsBoxHtml = `
+                        <div class="mt-3 px-3.5 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col gap-1">
+                            <div class="text-xs sm:text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 shrink-0 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span>Keine Beanstandungen – Fahrzeug i.O.</span>
+                            </div>
+                            ${car.bemerkung ? `<p class="text-xs sm:text-sm text-slate-700 pl-5 whitespace-pre-line">Notiz: ${escapeHtml(car.bemerkung)}</p>` : ''}
+                        </div>
+                    `;
+                }
+
+                return `
+                    <article class="bg-white rounded-2xl border border-slate-200 ${borderLeftClass} shadow-sm hover:shadow-md transition p-4 sm:p-5">
+                        <!-- Kopfzeile Karte -->
+                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-base sm:text-lg font-extrabold text-slate-900 bg-slate-100 border border-slate-300 px-3 py-1 rounded-xl tracking-tight">
+                                    #${escapeHtml(car.kontrollnummer)}
+                                </span>
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold border ${hMeta.badgeClass}">
+                                    <span>${hMeta.flag}</span>
+                                    <span>${hMeta.label}</span>
+                                </span>
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200">
+                                    👥 ${car.personen} Pax
+                                </span>
+                                <span class="text-xs font-semibold text-slate-500 ml-0.5">
+                                    🕒 ${escapeHtml(car.zeitStr || '--:--')} Uhr
+                                </span>
+                            </div>
+
+                            <!-- Aktionen: Bearbeiten & Löschen -->
+                            <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                                <button
+                                    type="button"
+                                    onclick="startEditCar(${car.id})"
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-blue-100 hover:text-blue-800 text-slate-700 text-xs font-bold transition min-h-[36px]"
+                                >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    <span>Bearbeiten</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onclick="openDeleteModal(${car.id})"
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-red-100 hover:text-red-700 text-slate-600 text-xs font-bold transition min-h-[36px]"
+                                    aria-label="Eintrag löschen"
+                                >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    <span>Löschen</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Optionales Kontrollschild / Unternehmen -->
+                        ${car.schild ? `
+                            <div class="mt-2 text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                                <span class="text-slate-400 text-xs uppercase font-bold">Schild / Firma:</span>
+                                <span>${escapeHtml(car.schild)}</span>
+                            </div>
+                        ` : ''}
+
+                        <!-- Status-Badges -->
+                        <div class="mt-2.5 flex flex-wrap gap-1.5">
+                            ${getStatusBadgesHtml(car)}
+                        </div>
+
+                        <!-- Feststellungen Box -->
+                        ${findingsBoxHtml}
+                    </article>
+                `;
+            }).join('');
+
+            container.innerHTML = `<div class="space-y-3.5">${html}</div>`;
+        }
+
+        function renderTableView(container, list) {
+            const rows = list.map(car => {
+                const sev = getCarSeverity(car);
+                const hMeta = HERKUNFT_META[car.herkunft] || HERKUNFT_META.CH;
+                const rowBg = sev === 'red' ? 'bg-red-50/40' : (sev === 'amber' ? 'bg-amber-50/40' : 'bg-white');
+
+                const allDetails = [
+                    ...(car.svgDetails || []).map(d => `SVG: ${d}`),
+                    ...(car.techDetails || []).map(d => `VTS: ${d}`)
+                ];
+
+                let findingsSummary = '';
+                if (!hasCarIssue(car)) {
+                    findingsSummary = `<span class="text-emerald-700 font-semibold text-xs">✓ Alles i.O.</span>`;
+                    if (car.bemerkung) {
+                        findingsSummary += `<div class="text-xs text-slate-500 mt-0.5">${escapeHtml(car.bemerkung)}</div>`;
+                    }
+                } else {
+                    const parts = [];
+                    if (allDetails.length) {
+                        parts.push(`<div class="font-semibold text-slate-800">${allDetails.map(escapeHtml).join(', ')}</div>`);
+                    }
+                    if (car.bemerkung) {
+                        parts.push(`<div class="text-slate-600 mt-0.5">${escapeHtml(car.bemerkung)}</div>`);
+                    }
+                    findingsSummary = parts.length ? parts.join('') : `<span class="text-xs text-slate-500 italic">Siehe Status</span>`;
+                }
+
+                return `
+                    <tr class="${rowBg} hover:bg-slate-50 border-b border-slate-200 align-top">
+                        <td class="p-3 whitespace-nowrap">
+                            <div class="font-extrabold text-slate-900">#${escapeHtml(car.kontrollnummer)}</div>
+                            <div class="text-[11px] text-slate-500">${escapeHtml(car.zeitStr || '--:--')} Uhr</div>
+                        </td>
+                        <td class="p-3">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold border ${hMeta.badgeClass} whitespace-nowrap">${hMeta.flag} ${hMeta.short}</span>
+                            ${car.schild ? `<div class="text-xs text-slate-600 font-medium mt-1">${escapeHtml(car.schild)}</div>` : ''}
+                        </td>
+                        <td class="p-3 font-bold text-slate-800 whitespace-nowrap">${car.personen}</td>
+                        <td class="p-3">
+                            <div class="flex flex-wrap gap-1">${getStatusBadgesHtml(car)}</div>
+                        </td>
+                        <td class="p-3 text-xs min-w-[200px]">${findingsSummary}</td>
+                        <td class="p-3 whitespace-nowrap text-right">
+                            <div class="inline-flex gap-1.5">
+                                <button type="button" onclick="startEditCar(${car.id})" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-blue-100 text-slate-700 hover:text-blue-800 text-xs font-bold transition">Edit</button>
+                                <button type="button" onclick="openDeleteModal(${car.id})" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-red-100 text-red-600 text-xs font-bold transition">✕</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-100 text-slate-600 text-xs uppercase tracking-wider border-b border-slate-200">
+                                <th class="p-3 font-bold">Kontroll-Nr.</th>
+                                <th class="p-3 font-bold">Herkunft / Schild</th>
+                                <th class="p-3 font-bold">Pax</th>
+                                <th class="p-3 font-bold">Status (SVG / VTS / RIPOL / Still.)</th>
+                                <th class="p-3 font-bold">Feststellungen / Was nicht gut war</th>
+                                <th class="p-3 font-bold text-right">Aktion</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // ---------------------------------------------------------------------
+        // 8. LÖSCH-DIALOGE (EINZELN & ALLE DATEN MIT DOPPELTER ABFRAGE)
+        // ---------------------------------------------------------------------
+        function openDeleteModal(id) {
+            const car = cars.find(c => c.id === id);
+            if (!car) return;
+            pendingDeleteId = id;
+            document.getElementById('confirm-modal-text').textContent =
+                `Möchten Sie den Eintrag #${car.kontrollnummer} (${HERKUNFT_META[car.herkunft]?.label || car.herkunft}, ${car.personen} Personen) wirklich aus dem Protokoll entfernen?`;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            pendingDeleteId = null;
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        document.getElementById('confirm-delete-btn').addEventListener('click', () => {
+            if (pendingDeleteId === null) return;
+            const target = cars.find(c => c.id === pendingDeleteId);
+            if (formState.editingId === pendingDeleteId) {
+                resetForm();
+            }
+            cars = cars.filter(c => c.id !== pendingDeleteId);
+            saveCarsToStorage();
+            renderAll();
+            closeDeleteModal();
+            if (target) {
+                showToast(`Eintrag #${target.kontrollnummer} wurde gelöscht.`, 'info');
+            }
+        });
+
+        // Alle Daten löschen (Doppelte Sicherheitsabfrage)
+        function openDeleteAllModal() {
+            if (cars.length === 0) {
+                showToast('Das Kontroll-Logbuch ist bereits leer.', 'info');
+                return;
+            }
+            document.getElementById('delete-all-desc').textContent =
+                `Aktuell sind ${cars.length} kontrollierte Cars im Protokoll gespeichert. Möchten Sie alle Daten löschen und eine neue Kontrolle beginnen?`;
+            document.getElementById('delete-all-step1').classList.remove('hidden');
+            document.getElementById('delete-all-step2').classList.add('hidden');
+            document.getElementById('delete-all-checkbox').checked = false;
+            document.getElementById('delete-all-final-btn').disabled = true;
+            document.getElementById('delete-all-modal').classList.remove('hidden');
+        }
+
+        function goToDeleteAllStep2() {
+            document.getElementById('delete-all-step1').classList.add('hidden');
+            document.getElementById('delete-all-step2').classList.remove('hidden');
+        }
+
+        function toggleFinalDeleteButton() {
+            const checked = document.getElementById('delete-all-checkbox').checked;
+            document.getElementById('delete-all-final-btn').disabled = !checked;
+        }
+
+        function closeDeleteAllModal() {
+            document.getElementById('delete-all-modal').classList.add('hidden');
+        }
+
+        function confirmDeleteAll() {
+            if (!document.getElementById('delete-all-checkbox').checked) return;
+            cars = [];
+            saveCarsToStorage();
+            try { localStorage.removeItem(STORAGE_KEY_LEGACY); } catch (_) {}
+            currentFilter = 'all';
+            currentSearch = '';
+            document.getElementById('search-input').value = '';
+            document.getElementById('clear-search-btn').classList.add('hidden');
+            resetForm();
+            renderAll();
+            closeDeleteAllModal();
+            showToast('Protokoll geleert – Neue Kontrolle bereit.', 'success');
+        }
+
+        // ---------------------------------------------------------------------
+        // 9. KONTROLL-ABSCHLUSSBERICHT (MODAL, KURZRAPPORT, DRUCK/PDF)
+        // ---------------------------------------------------------------------
+        function getControlTimeSpan() {
+            const nowDt = formatDateTime(new Date());
+            if (!cars.length) {
+                return { datum: nowDt.datumStr, zeitraum: 'Keine Einträge' };
+            }
+            const sorted = [...cars].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            const first = sorted[0];
+            const last = sorted[sorted.length - 1];
+            const datum = first.datumStr === last.datumStr ? first.datumStr : `${first.datumStr} – ${last.datumStr}`;
+            const zeitraum = first.zeitStr === last.zeitStr ? `${first.zeitStr} Uhr` : `${first.zeitStr} – ${last.zeitStr} Uhr`;
+            return { datum, zeitraum };
+        }
+
+        function openReportModal() {
+            renderReportContent();
+            document.getElementById('report-modal').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeReportModal() {
+            document.getElementById('report-modal').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function renderReportContent() {
+            const s = computeStats();
+            const span = getControlTimeSpan();
+            const ort = meta.kontrollort ? escapeHtml(meta.kontrollort) : 'Nicht angegeben';
+            const pct = (val) => s.totalCars > 0 ? `${Math.round((val / s.totalCars) * 100)}%` : '0%';
+
+            const issueList = [...cars]
+                .filter(c => hasCarIssue(c))
+                .reverse(); // Chronologisch (älteste zuerst für den Rapport)
+
+            const topHtml = s.topFindings.length > 0
+                ? `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    ${s.topFindings.slice(0, 10).map(([label, count]) => `
+                        <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs sm:text-sm">
+                            <span class="font-semibold text-slate-800">${escapeHtml(label)}</span>
+                            <span class="font-extrabold bg-slate-900 text-white px-2.5 py-0.5 rounded-lg">${count}×</span>
+                        </div>
+                    `).join('')}
+                   </div>`
+                : `<p class="text-sm text-slate-500 italic">Keine spezifischen Mängel-Kategorien verzeichnet.</p>`;
+
+            const issueCarsHtml = issueList.length > 0
+                ? `<div class="space-y-3">
+                    ${issueList.map(c => {
+                        const hMeta = HERKUNFT_META[c.herkunft] || HERKUNFT_META.CH;
+                        const details = [
+                            ...(c.svgDetails || []).map(d => `SVG: ${d}`),
+                            ...(c.techDetails || []).map(d => `VTS: ${d}`)
+                        ];
+                        return `
+                            <div class="print-break-inside-avoid p-3.5 rounded-xl border border-slate-300 bg-slate-50/70 space-y-1.5">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="font-extrabold text-slate-900">#${escapeHtml(c.kontrollnummer)}</span>
+                                        <span class="text-xs font-bold px-2 py-0.5 rounded-md border ${hMeta.badgeClass}">${hMeta.flag} ${hMeta.short}</span>
+                                        ${c.schild ? `<span class="text-xs font-semibold text-slate-700">(${escapeHtml(c.schild)})</span>` : ''}
+                                        <span class="text-xs font-semibold text-slate-600">• ${c.personen} Pax</span>
+                                    </div>
+                                    <span class="text-xs text-slate-500 font-medium">${escapeHtml(c.zeitStr)} Uhr</span>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5">${getStatusBadgesHtml(c)}</div>
+                                ${details.length ? `<div class="text-xs font-bold text-slate-800">Mängel/Verstösse: ${details.map(escapeHtml).join(' | ')}</div>` : ''}
+                                ${c.bemerkung ? `<div class="text-xs sm:text-sm text-slate-700 whitespace-pre-line">Bemerkung: ${escapeHtml(c.bemerkung)}</div>` : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                   </div>`
+                : `<div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-sm">
+                    ✓ Alle kontrollierten Cars waren ohne Beanstandung.
+                   </div>`;
+
+            document.getElementById('report-printable').innerHTML = `
+                <!-- Bericht-Kopf -->
+                <div class="border-b-2 border-slate-900 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+                    <div>
+                        <div class="text-xs font-extrabold uppercase tracking-widest text-blue-700">Carkontrolle Pro – Abschlussbericht</div>
+                        <h3 class="text-2xl font-extrabold text-slate-900 mt-0.5">Schwerverkehrs- / Reisecarkontrolle</h3>
+                    </div>
+                    <div class="text-xs sm:text-sm text-slate-700 sm:text-right space-y-0.5">
+                        <div><strong>Ort:</strong> ${ort}</div>
+                        <div><strong>Datum:</strong> ${escapeHtml(span.datum)} &nbsp;|&nbsp; <strong>Zeit:</strong> ${escapeHtml(span.zeitraum)}</div>
+                    </div>
+                </div>
+
+                <!-- Kennzahlen-Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 print-break-inside-avoid">
+                    <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
+                        <div class="text-[11px] font-bold uppercase text-slate-500">Kontrollierte Cars</div>
+                        <div class="text-2xl font-extrabold text-slate-900 mt-0.5">${s.totalCars}</div>
+                        <div class="text-xs text-slate-600 mt-1">
+                            CH: <strong>${s.ch}</strong> (${pct(s.ch)}) · EU: <strong>${s.eu}</strong> (${pct(s.eu)}) · Dritt: <strong>${s.dritte}</strong> (${pct(s.dritte)})
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
+                        <div class="text-[11px] font-bold uppercase text-slate-500">Kontrollierte Personen</div>
+                        <div class="text-2xl font-extrabold text-blue-700 mt-0.5">${s.totalPax}</div>
+                        <div class="text-xs text-slate-600 mt-1">Durchschnitt: <strong>${s.avgPax}</strong> Pax / Car</div>
+                    </div>
+
+                    <div class="p-3.5 rounded-xl border-2 border-red-200 bg-red-50/50">
+                        <div class="text-[11px] font-bold uppercase text-red-700">Anzeigen Total</div>
+                        <div class="text-2xl font-extrabold text-red-600 mt-0.5">${s.totalAnzeigen}</div>
+                        <div class="text-xs text-slate-700 mt-1">
+                            SVG: <strong>${s.svgAnzeigen}</strong> · Technik: <strong>${s.techAnzeigen}</strong> (${s.carsWithAnzeige} Cars)
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 rounded-xl border border-amber-200 bg-amber-50/50">
+                        <div class="text-[11px] font-bold uppercase text-amber-800">OBV &amp; Mängelberichte</div>
+                        <div class="text-2xl font-extrabold text-amber-700 mt-0.5">${s.svgObv + s.techMangel}</div>
+                        <div class="text-xs text-slate-700 mt-1">
+                            SVG-OBV: <strong>${s.svgObv}</strong> · Tech.-Mangel: <strong>${s.techMangel}</strong>
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
+                        <div class="text-[11px] font-bold uppercase text-slate-500">RIPOL &amp; Stilllegungen</div>
+                        <div class="text-2xl font-extrabold text-rose-700 mt-0.5">${s.ripolCount} <span class="text-slate-400 font-normal">/</span> <span class="text-orange-600">${s.stillCount}</span></div>
+                        <div class="text-xs text-slate-600 mt-1">RIPOL-Treffer: <strong>${s.ripolCount}</strong> · Stillgelegt: <strong>${s.stillCount}</strong></div>
+                    </div>
+
+                    <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
+                        <div class="text-[11px] font-bold uppercase text-slate-500">Beanstandungsquote</div>
+                        <div class="text-2xl font-extrabold text-slate-900 mt-0.5">${s.quote}%</div>
+                        <div class="text-xs text-slate-600 mt-1">
+                            Beanstandet: <strong>${s.issueCars}</strong> · Ohne Mangel: <strong>${s.okCars}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top-Feststellungen -->
+                <div class="print-break-inside-avoid space-y-2">
+                    <h4 class="text-sm font-extrabold uppercase tracking-wider text-slate-700 border-b border-slate-200 pb-1.5">
+                        Häufigste Feststellungen (SVG &amp; VTS)
+                    </h4>
+                    ${topHtml}
+                </div>
+
+                <!-- Liste aller beanstandeten Cars -->
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
+                        <h4 class="text-sm font-extrabold uppercase tracking-wider text-slate-700">
+                            Beanstandete Cars im Detail (${issueList.length})
+                        </h4>
+                        <span class="text-xs text-slate-500">Zusätzlich ${s.okCars} Cars ohne Beanstandung (i.O.)</span>
+                    </div>
+                    ${issueCarsHtml}
+                </div>
+            `;
+        }
+
+        /**
+         * Erstellt einen sauber formatierten Text-Kurzrapport und kopiert ihn via execCommand('copy').
+         */
+        function copyShortReport() {
+            const s = computeStats();
+            const span = getControlTimeSpan();
+            const ort = meta.kontrollort || 'Nicht angegeben';
+
+            const lines = [
+                `============================================`,
+                `KONTROLL-ABSCHLUSSBERICHT – CARKONTROLLE PRO`,
+                `============================================`,
+                `Ort:       ${ort}`,
+                `Datum:     ${span.datum}`,
+                `Zeitraum:  ${span.zeitraum}`,
+                ``,
+                `ZUSAMMENFASSUNG`,
+                `--------------------------------------------`,
+                `Kontrollierte Cars:     ${s.totalCars} (CH: ${s.ch} | EU: ${s.eu} | Drittstaat: ${s.dritte})`,
+                `Kontrollierte Personen: ${s.totalPax} Pax (Ø ${s.avgPax} Pax/Car)`,
+                `Beanstandungsquote:     ${s.quote}% (${s.issueCars} beanstandet / ${s.okCars} i.O.)`,
+                ``,
+                `ANZEIGEN & WIDERHANDLUNGEN`,
+                `--------------------------------------------`,
+                `Anzeigen Total:         ${s.totalAnzeigen} (SVG: ${s.svgAnzeigen} | Technik/VTS: ${s.techAnzeigen} | Betr. Cars: ${s.carsWithAnzeige})`,
+                `OBV / Verwarnung (SVG): ${s.svgObv}`,
+                `Mängelberichte (VTS):   ${s.techMangel}`,
+                `RIPOL-Treffer:          ${s.ripolCount}`,
+                `Stilllegungen:          ${s.stillCount}`
+            ];
+
+            if (s.topFindings.length > 0) {
+                lines.push('', 'TOP-FESTSTELLUNGEN', '--------------------------------------------');
+                s.topFindings.slice(0, 8).forEach(([label, count]) => {
+                    lines.push(`- ${label}: ${count}x`);
+                });
+            }
+
+            const issueList = [...cars].filter(c => hasCarIssue(c)).reverse();
+            if (issueList.length > 0) {
+                lines.push('', `BEANSTANDETE CARS (${issueList.length})`, '--------------------------------------------');
+                issueList.forEach(c => {
+                    const statusParts = [];
+                    if (c.svgStatus === 'anzeige') statusParts.push('SVG-Anzeige');
+                    else if (c.svgStatus === 'obv') statusParts.push('SVG-OBV');
+                    if (c.techStatus === 'anzeige') statusParts.push('Technik-Anzeige');
+                    else if (c.techStatus === 'mangel') statusParts.push('Mängelbericht');
+                    if (c.ripol) statusParts.push('RIPOL');
+                    if (c.stilllegung) statusParts.push('STILLGELEGT');
+
+                    const details = [...(c.svgDetails || []), ...(c.techDetails || [])].join(', ');
+                    const schildStr = c.schild ? ` [${c.schild}]` : '';
+                    lines.push(`#${c.kontrollnummer} (${c.zeitStr} Uhr) | ${c.herkunft}${schildStr} | ${c.personen} Pax | ${statusParts.join(', ')}`);
+                    if (details) lines.push(`   -> Feststellungen: ${details}`);
+                    if (c.bemerkung) lines.push(`   -> Bemerkung: ${c.bemerkung.replace(/\n/g, ' ')}`);
+                });
+            } else {
+                lines.push('', 'Keine Beanstandungen – alle kontrollierten Cars waren i.O.');
+            }
+
+            const text = lines.join('\n');
+
+            // Zuverlässiges Kopieren via temporärem Textarea & document.execCommand('copy')
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                ta.style.top = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                ta.setSelectionRange(0, ta.value.length);
+                const ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+
+                if (ok) {
+                    showToast('Kurzrapport in die Zwischenablage kopiert!', 'success');
+                } else {
+                    showToast('Kopieren fehlgeschlagen – bitte manuell kopieren.', 'warning');
+                }
+            } catch (err) {
+                console.error('Copy-Fehler:', err);
+                showToast('Kopieren nicht unterstützt.', 'error');
+            }
+        }
+
+        function printReport() {
+            window.print();
+        }
+
+        // ---------------------------------------------------------------------
+        // 10. EXCEL-CSV-EXPORT (UTF-8 BOM, SEMIKOLON, SAUBERES ESCAPING)
+        // ---------------------------------------------------------------------
+        function csvEscape(value) {
+            const str = value === null || value === undefined ? '' : String(value);
+            return `"${str.replace(/"/g, '""')}"`;
+        }
+
+        function exportCSV() {
+            if (cars.length === 0) {
+                showToast('Keine Daten für den Export vorhanden.', 'warning');
+                return;
+            }
+
+            const svgMap = { keine: 'Keine (i.O.)', obv: 'OBV / Verwarnung', anzeige: 'Anzeige (SVG)' };
+            const techMap = { keine: 'Keine (i.O.)', mangel: 'Mängelbericht', anzeige: 'Anzeige (Technik)' };
+
+            const header = [
+                'Kontrollnummer',
+                'Datum',
+                'Uhrzeit',
+                'Kontrollort',
+                'Herkunft',
+                'Kontrollschild_Unternehmen',
+                'Personen',
+                'SVG_Status',
+                'SVG_Details',
+                'Technik_Status',
+                'Technik_Details',
+                'Anzeigen_Anzahl',
+                'RIPOL_Treffer',
+                'Stillgelegt',
+                'Bemerkung'
+            ].map(csvEscape).join(';');
+
+            // Chronologische Reihenfolge für den Export
+            const chronological = [...cars].reverse();
+            const rows = chronological.map(c => [
+                c.kontrollnummer,
+                c.datumStr || '',
+                c.zeitStr || '',
+                meta.kontrollort || '',
+                HERKUNFT_META[c.herkunft]?.label || c.herkunft,
+                c.schild || '',
+                c.personen,
+                svgMap[c.svgStatus] || 'Keine (i.O.)',
+                (c.svgDetails || []).join(', '),
+                techMap[c.techStatus] || 'Keine (i.O.)',
+                (c.techDetails || []).join(', '),
+                getCarAnzeigenCount(c),
+                c.ripol ? 'Ja' : 'Nein',
+                c.stilllegung ? 'Ja' : 'Nein',
+                (c.bemerkung || '').replace(/\r?\n/g, ' ')
+            ].map(csvEscape).join(';'));
+
+            // UTF-8 BOM (\uFEFF) garantiert korrekte Umlaute (ä, ö, ü) in Microsoft Excel
+            const csvContent = '\uFEFF' + [header, ...rows].join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const dt = formatDateTime(new Date());
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Carkontrolle_Protokoll_${dt.isoDateFile}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+            showToast(`Excel-CSV (${cars.length} Cars) wurde exportiert.`, 'success');
+        }
+
+        // ---------------------------------------------------------------------
+        // 11. INITIALISIERUNG & EVENT-LISTENER
+        // ---------------------------------------------------------------------
+        function renderAll() {
+            renderDashboard();
+            updateFilterButtonsUI();
+            renderLogbook();
+        }
+
+        function initApp() {
+            loadFromStorage();
+
+            // Aktuelles Datum im Dashboard anzeigen
+            const now = new Date();
+            document.getElementById('live-date-label').textContent =
+                now.toLocaleDateString('de-CH', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+
+            // Kontrollort laden & speichern bei Eingabe
+            const ortInput = document.getElementById('kontrollort-input');
+            ortInput.value = meta.kontrollort || '';
+            ortInput.addEventListener('input', (e) => {
+                meta.kontrollort = e.target.value;
+                saveMetaToStorage();
+            });
+
+            // Duplikat-Hinweis bei Kontrollnummer-Eingabe
+            document.getElementById('kontrollnummer').addEventListener('input', checkDuplicateKontrollnummer);
+
+            // Escape-Taste schliesst offene Modals
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeReportModal();
+                    closeDeleteModal();
+                    closeDeleteAllModal();
+                }
+            });
+
+            // Klick auf Backdrop schliesst Modals
+            document.getElementById('report-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'report-modal') closeReportModal();
+            });
+            document.getElementById('confirm-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'confirm-modal') closeDeleteModal();
+            });
+            document.getElementById('delete-all-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'delete-all-modal') closeDeleteAllModal();
+            });
+
+            resetForm();
+            setViewMode('cards');
+            renderAll();
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
 </html>
